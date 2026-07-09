@@ -1,16 +1,18 @@
 terraform {
   backend "s3" {
-    bucket       = "dev-aman-tf-bucket"
-    region       = "us-east-1"
-    key          = "End-to-End-Kubernetes-DevSecOps-Tetris-Project/EKS-TF/terraform.tfstate"
-    use_lockfile = true
-    encrypt      = true
+    bucket         = "rahul-terraform-states-2026"
+    region         = "ap-south-1"
+    key            = "Jenkins-Server-TF/terraform.tfstate"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
   }
-  required_version = ">=1.14.0"
+
+  required_version = ">= 0.13.0"
+
   required_providers {
     aws = {
-      version = ">= 5.49.0"
       source  = "hashicorp/aws"
+      version = ">= 2.7.0"
     }
   }
 }
