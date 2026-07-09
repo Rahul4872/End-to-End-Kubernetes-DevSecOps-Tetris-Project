@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket         = "rahul-terraform-state-2026"
+    bucket         = "rahul-terraform-states-2026"
     region         = "ap-south-1"
-    key            = "Jenkins-Server-TF/terraform.tfstate"
+    key            = "EKS-TF/terraform.tfstate"
     dynamodb_table = "terraform-locks"
     encrypt        = true
   }
