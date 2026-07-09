@@ -40,12 +40,12 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Installing Dependencies') {
             steps {
                 dir('Tetris-V1') {
                     sh 'npm install'
@@ -70,36 +70,39 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Image Build') {
             steps {
                 dir('Tetris-V1') {
+                    sh 'docker system prune -f'
                     sh 'docker build -t tetrisv1 .'
                 }
             }
         }
 
-        stage('Docker Push') {
+        stage('Docker Image Push') {
             steps {
                 withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                    sh 'docker tag tetrisv1 YOUR_DOCKERHUB_USERNAME/tetrisv1:${BUILD_NUMBER}'
-                    sh 'docker push YOUR_DOCKERHUB_USERNAME/tetrisv1:${BUILD_NUMBER}'
+                    sh 'docker tag tetrisv1 rahulmlops03/tetrisv1:${BUILD_NUMBER}'
+                    sh 'docker push rahulmlops03/tetrisv1:${BUILD_NUMBER}'
                 }
             }
         }
 
         stage('Trivy Image Scan') {
             steps {
-                sh 'trivy image YOUR_DOCKERHUB_USERNAME/tetrisv1:${BUILD_NUMBER} > trivyimage.txt'
+                sh 'trivy image rahulmlops03/tetrisv1:${BUILD_NUMBER} > trivyimage.txt'
             }
         }
 
         stage('Checkout Manifest Repository') {
             steps {
-                git branch: 'master', url: 'https://github.com/Rahul4872/End-to-End-Kubernetes-DevSecOps-Tetris-Project.git'
+                dir('Manifest-file') {
+                    git branch: 'master', url: 'https://github.com/Rahul4872/End-to-End-Kubernetes-DevSecOps-Tetris-Project.git'
+                }
             }
         }
 
-        stage('Update Deployment Manifest') {
+        stage('Update Deployment File') {
 
             environment {
                 GIT_REPO_NAME = "End-to-End-Kubernetes-DevSecOps-Tetris-Project"
@@ -113,7 +116,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
 
                         sh '''
-                        git config user.email "YOUR_EMAIL@gmail.com"
+                        git config user.email "YOUR_GITHUB_EMAIL"
                         git config user.name "Rahul4872"
 
                         imageTag=$(grep -oP '(?<=tetrisv1:)[^ ]+' deployment-service.yml)
@@ -122,7 +125,7 @@ pipeline {
 
                         git add deployment-service.yml
 
-                        git commit -m "Update image to ${BUILD_NUMBER}"
+                        git commit -m "Update image version to ${BUILD_NUMBER}" || true
 
                         git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master
                         '''
