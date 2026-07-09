@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        Nodejs 'nodejs'
+        nodejs 'nodejs'
     }
 
     environment {
@@ -56,7 +56,8 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 dir('Tetris-V1') {
-                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
+                                    odcInstallation: 'DP-Check'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
                 }
             }
@@ -73,17 +74,30 @@ pipeline {
         stage('Docker Image Build') {
             steps {
                 dir('Tetris-V1') {
-                    sh 'docker system prune -f'
-                    sh 'docker build -t tetrisv1 .'
+                    sh '''
+                    docker system prune -f
+                    docker build -t tetrisv1 .
+                    '''
                 }
             }
         }
 
         stage('Docker Image Push') {
             steps {
-                withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                    sh 'docker tag tetrisv1 rahulmlops03/tetrisv1:${BUILD_NUMBER}'
-                    sh 'docker push rahulmlops03/tetrisv1:${BUILD_NUMBER}'
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+                    docker tag tetrisv1 rahulmlops03/tetrisv1:${BUILD_NUMBER}
+
+                    docker push rahulmlops03/tetrisv1:${BUILD_NUMBER}
+
+                    docker logout
+                    '''
                 }
             }
         }
